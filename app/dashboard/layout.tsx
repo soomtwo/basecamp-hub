@@ -16,16 +16,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const displayName = profile?.full_name || user.email || "Team Member";
 
-  // Look up sort_order for this position to determine manage access
   let canManage = false;
   if (profile?.position) {
     const { data: pos } = await supabase
       .from("positions")
       .select("sort_order")
-      .eq("id", profile.position)
+      .eq("title", profile.position)
       .single() as any;
-    // sort_order 3, 4, 5 = Shift Supervisor, Assistant Store Manager, Store Manager
-    canManage = [3, 4, 5].includes(pos?.sort_order ?? 0);
+    // 3=Shift Supervisor, 4=ASM, 5=Store Manager, 6=District Manager, 7=Regional Manager
+    canManage = [3, 4, 5, 6, 7].includes(pos?.sort_order ?? 0);
   }
 
   return (

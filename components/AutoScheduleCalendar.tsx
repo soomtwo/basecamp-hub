@@ -63,7 +63,7 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
   const [prefs, setPrefs] = useState<Record<string, Pref>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [scheduleStatus, setScheduleStatus] = useState<"draft" | "published" | null>(null);
   const [error, setError] = useState("");
 
   // Highlight & drag state
@@ -82,18 +82,26 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
       setSaved(false);
       const supabase = createClient();
 
-      const [{ data: bData }, { data: sData }] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, preferred_name").eq("location_id", locationId).order("full_name") as any,
+      const monthKey = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+
+      const [{ data: bData }, { data: sData }, { data: statusData }] = await Promise.all([
+        // Only Baristas and Lead Baristas enter the schedule
+        supabase.from("profiles").select("id, full_name, preferred_name")
+          .eq("location_id", locationId)
+          .in("position", ["Barista", "Senior/Lead Barista"])
+          .order("full_name") as any,
         supabase.from("shifts").select("employee_id, shift_date, start_time")
           .eq("location_id", locationId)
           .gte("shift_date", format(startOfMonth(currentMonth), "yyyy-MM-dd"))
           .lte("shift_date", format(endOfMonth(currentMonth), "yyyy-MM-dd"))
           .order("shift_date") as any,
+        supabase.from("schedule_status").select("status").eq("location_id", locationId).eq("month", monthKey).single() as any,
       ]);
 
       if (cancelled) return;
 
       setBaristas(bData || []);
+      setScheduleStatus(statusData?.status ?? null);
 
       if (sData && sData.length > 0) {
         const sched: Schedule = {};
@@ -102,7 +110,6 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
           sched[s.shift_date][s.start_time.startsWith("08") ? "am" : "pm"].push(s.employee_id);
         }
         setSchedule(sched);
-        setSaved(true);
       }
       setLoading(false);
     }
@@ -113,12 +120,12 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
 
   function handleGenerate() {
     if (baristas.length < CREW * 2) {
-      setError(`Need at least ${CREW * 2} people to generate a schedule.`);
+      setError(`Need at least ${CREW * 2} baristas to generate a schedule.`);
       return;
     }
     setError("");
     setSchedule(buildSchedule(baristas, currentMonth.getFullYear(), currentMonth.getMonth(), prefs));
-    setSaved(false);
+    setScheduleStatus(null); // unsaved changes
     setHighlightId(null);
   }
 
@@ -163,12 +170,14 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
     dragSource.current = null;
   }
 
-  async function handleSave() {
+  async function persistSchedule(newStatus: "draft" | "published") {
     if (!schedule || !locationId) return;
     setSaving(true);
     setError("");
     const supabase = createClient();
+    const monthKey = format(startOfMonth(currentMonth), "yyyy-MM-dd");
 
+    // Delete + re-insert shifts
     await (supabase.from("shifts").delete()
       .eq("location_id", locationId)
       .gte("shift_date", format(startOfMonth(currentMonth), "yyyy-MM-dd"))
@@ -181,9 +190,18 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
     }
 
     const { error: err } = await supabase.from("shifts").insert(rows) as any;
+    if (err) { setError("Failed to save. Try again."); setSaving(false); return; }
+
+    // Upsert schedule status
+    await supabase.from("schedule_status").upsert({
+      location_id: locationId,
+      month: monthKey,
+      status: newStatus,
+      ...(newStatus === "published" ? { published_at: new Date().toISOString() } : {}),
+    }) as any;
+
+    setScheduleStatus(newStatus);
     setSaving(false);
-    if (err) { setError("Failed to save. Try again."); return; }
-    setSaved(true);
   }
 
   // Calendar grid
@@ -244,18 +262,31 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
           </button>
         )}
 
-        {schedule && !saved && (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save schedule"}
-          </button>
+        {schedule && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => persistSchedule("draft")}
+              disabled={saving}
+              className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-60 border border-gray-200"
+            >
+              {saving ? "Saving…" : "Save draft"}
+            </button>
+            <button
+              onClick={() => persistSchedule("published")}
+              disabled={saving}
+              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-60"
+            >
+              {saving ? "Saving…" : "🌐 Make public"}
+            </button>
+          </div>
         )}
 
-        {saved && !saving && schedule && (
-          <span className="text-sm text-green-600 font-medium">✓ Saved</span>
+        {/* Status badge */}
+        {scheduleStatus === "draft" && !saving && (
+          <span className="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-medium border border-yellow-200">📝 Draft</span>
+        )}
+        {scheduleStatus === "published" && !saving && (
+          <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium border border-green-200">✓ Published</span>
         )}
       </div>
 

@@ -7,12 +7,23 @@ export default async function SchedulePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profileRows } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select("location_id")
-    .eq("id", user.id);
+    .select("location_id, position")
+    .eq("id", user.id)
+    .single() as any;
 
-  const locationId = profileRows?.[0]?.location_id ?? null;
+  const locationId = profile?.location_id ?? null;
+
+  let canManage = false;
+  if (profile?.position) {
+    const { data: pos } = await supabase
+      .from("positions")
+      .select("sort_order")
+      .eq("title", profile.position)
+      .single() as any;
+    canManage = [3, 4, 5, 6, 7].includes(pos?.sort_order ?? 0);
+  }
 
   return (
     <div className="max-w-4xl">
@@ -26,7 +37,7 @@ export default async function SchedulePage() {
           <p className="text-gray-400">Your profile doesn&apos;t have a location set. Contact your manager.</p>
         </div>
       ) : (
-        <MonthlyCalendar locationId={locationId} userId={user.id} />
+        <MonthlyCalendar locationId={locationId} userId={user.id} canManage={canManage} />
       )}
     </div>
   );
