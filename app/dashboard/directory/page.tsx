@@ -79,9 +79,9 @@ export default async function DirectoryPage() {
                       )}
                     </div>
                     <p className="text-sm text-gray-500">{emp.position}</p>
-                    {(emp.manager as { full_name: string } | null)?.full_name && (
+                    {(emp.manager as unknown as { full_name: string } | null)?.full_name && (
                       <p className="text-xs text-gray-400 mt-0.5">
-                        Reports to {(emp.manager as { full_name: string }).full_name}
+                        Reports to {(emp.manager as unknown as { full_name: string }).full_name}
                       </p>
                     )}
                   </div>

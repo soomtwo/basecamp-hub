@@ -66,7 +66,7 @@ export default async function ShiftsPage() {
                 <div key={req.id} className="flex items-center justify-between p-3 bg-coffee-50 rounded-lg">
                   <div>
                     <p className="font-medium text-gray-800">
-                      {(req.requester as { full_name: string } | null)?.full_name}
+                      {(req.requester as unknown as { full_name: string } | null)?.full_name}
                     </p>
                     <p className="text-sm text-gray-500">
                       Wants to swap their {reqShift ? format(new Date(reqShift.shift_date), "EEE MMM d") : ""} shift ({reqShift?.start_time?.slice(0, 5)}–{reqShift?.end_time?.slice(0, 5)})
@@ -104,7 +104,7 @@ export default async function ShiftsPage() {
           <div className="space-y-3">
             {myRequests.map((req) => {
               const reqShift = req.requester_shift as { shift_date: string; start_time: string; end_time: string } | null;
-              const targetEmp = req.target_employee as { full_name: string } | null;
+              const targetEmp = req.target_employee as unknown as { full_name: string } | null;
               return (
                 <div key={req.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                   <div>

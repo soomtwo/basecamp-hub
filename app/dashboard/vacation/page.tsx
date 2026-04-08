@@ -56,7 +56,7 @@ export default async function VacationPage() {
               <div key={req.id} className="flex items-center justify-between p-3 bg-coffee-50 rounded-lg">
                 <div>
                   <p className="font-medium text-gray-800">
-                    {(req.employee as { full_name: string } | null)?.full_name}
+                    {(req.employee as unknown as { full_name: string } | null)?.full_name}
                   </p>
                   <p className="text-sm text-gray-500">
                     {format(new Date(req.start_date), "MMM d")} – {format(new Date(req.end_date), "MMM d, yyyy")}
