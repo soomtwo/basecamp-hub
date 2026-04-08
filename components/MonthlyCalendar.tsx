@@ -43,25 +43,10 @@ export default function MonthlyCalendar({ locationId, userId }: { locationId: st
     const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
     const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
 
-    const { data: schedules } = await supabase
-      .from("schedules")
-      .select("id")
-      .eq("location_id", locationId)
-      .gte("week_start", monthStart)
-      .lte("week_start", monthEnd);
-
-    if (!schedules || schedules.length === 0) {
-      setShifts([]);
-      setLoading(false);
-      return;
-    }
-
-    const scheduleIds = schedules.map((s) => s.id);
-
     const { data: shiftData } = await supabase
       .from("shifts")
-      .select("id, shift_date, start_time, end_time, employee:profiles!employee_id(id, full_name, preferred_name)")
-      .in("schedule_id", scheduleIds)
+      .select("id, shift_date, start_time, end_time, status, employee:profiles!employee_id(id, full_name, preferred_name)")
+      .eq("location_id", locationId)
       .gte("shift_date", monthStart)
       .lte("shift_date", monthEnd)
       .order("start_time") as any;
