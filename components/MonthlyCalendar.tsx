@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  format, startOfMonth, endOfMonth, startOfWeek,
+  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addDays, addMonths, subMonths, isSameMonth, isToday, isSameDay
 } from "date-fns";
 import ShiftSwapDialog from "./ShiftSwapDialog";
