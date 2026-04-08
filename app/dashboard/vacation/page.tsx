@@ -17,11 +17,11 @@ export default async function VacationPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("department")
     .eq("id", user.id)
     .single();
 
-  const isManager = profile?.role === "manager";
+  const isManager = false; // role column not yet available — update when added
 
   const { data: myRequests } = await supabase
     .from("vacation_requests")
