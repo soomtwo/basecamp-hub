@@ -24,34 +24,35 @@ function buildSchedule(baristas: Barista[], year: number, month: number, prefs: 
   const hours: Record<string, number> = Object.fromEntries(baristas.map(b => [b.id, 0]));
   const schedule: Schedule = {};
 
-  // Stagger each barista's 5-on-2-off cycle by their index
-  // e.g. barista 0 starts their cycle on day 0, barista 1 on day 1, etc.
-  // isWorkDay returns true if day falls within the 5 working days of their cycle
+  // Each barista gets a staggered offset so their 2 days off fall on different days
+  // barista 0 → offset 0, barista 1 → offset 1, ... barista 7 → offset 0 again, etc.
   const offsets: Record<string, number> = {};
   baristas.forEach((b, i) => { offsets[b.id] = i % 7; });
 
+  // Hard rule: a barista only works if it's within their 5-work-day window
   function isWorkDay(id: string, dayIndex: number): boolean {
     return ((dayIndex - offsets[id]) % 7 + 7) % 7 < 5;
   }
 
   for (let d = 1; d <= days; d++) {
     const date = format(new Date(year, month, d), "yyyy-MM-dd");
-    const dayIndex = d - 1; // 0-indexed so cycle math works consistently
+    const dayIndex = d - 1;
 
-    // Only baristas on a work day today
-    const available = baristas.filter(b => isWorkDay(b.id, dayIndex));
+    // These baristas MUST work today — it's their scheduled work day.
+    // Do NOT skip them for equal-hours reasons; that breaks the 5-in-a-row.
+    const mustWork = baristas.filter(b => isWorkDay(b.id, dayIndex));
 
-    // AM: available + pref != pm, sorted by fewest hours
-    const amPool = available
-      .filter(b => (prefs[b.id] || "any") !== "pm")
-      .sort((a, b) => hours[a.id] - hours[b.id]);
+    // Among those who must work, sort by accumulated hours so the
+    // lower-hours people get the longer AM shift (9h), higher-hours get PM (4h)
+    const sorted = [...mustWork].sort((a, b) => hours[a.id] - hours[b.id]);
+
+    // AM: prefer pref=am, then anyone with fewest hours, up to CREW slots
+    const amPool = sorted.filter(b => (prefs[b.id] || "any") !== "pm");
     const amCrew = amPool.slice(0, CREW).map(b => b.id);
     amCrew.forEach(id => { hours[id] += AM.hours; });
 
-    // PM: available + pref != am + not already on AM today
-    const pmPool = available
-      .filter(b => !amCrew.includes(b.id) && (prefs[b.id] || "any") !== "am")
-      .sort((a, b) => hours[a.id] - hours[b.id]);
+    // PM: everyone still on their work day who isn't in AM
+    const pmPool = sorted.filter(b => !amCrew.includes(b.id) && (prefs[b.id] || "any") !== "am");
     const pmCrew = pmPool.slice(0, CREW).map(b => b.id);
     pmCrew.forEach(id => { hours[id] += PM.hours; });
 
