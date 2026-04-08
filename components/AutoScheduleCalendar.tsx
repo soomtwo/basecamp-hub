@@ -79,7 +79,7 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
     async function load() {
       setLoading(true);
       setSchedule(null);
-      setSaved(false);
+      setScheduleStatus(null);
       const supabase = createClient();
 
       const monthKey = format(startOfMonth(currentMonth), "yyyy-MM-dd");
@@ -166,7 +166,7 @@ export default function AutoScheduleCalendar({ locations }: { locations: Locatio
     tgtArr[targetIndex] = tmp;
 
     setSchedule(next);
-    setSaved(false);
+    setScheduleStatus(null); // unsaved changes after drag
     dragSource.current = null;
   }
 
