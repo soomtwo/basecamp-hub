@@ -99,7 +99,7 @@ export default async function SchedulePage() {
                     <p className="text-xs text-gray-300">—</p>
                   ) : (
                     dayShifts.map((shift) => {
-                      const emp = shift.employee as { id: string; full_name: string } | null;
+                      const emp = shift.employee as unknown as { id: string; full_name: string } | null;
                       const isMe = emp?.id === user.id;
                       return (
                         <div

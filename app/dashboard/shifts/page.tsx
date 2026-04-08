@@ -61,7 +61,7 @@ export default async function ShiftsPage() {
           <h2 className="font-semibold text-coffee-800 mb-4">📬 Swap Requests for You ({incomingRequests.length})</h2>
           <div className="space-y-3">
             {incomingRequests.map((req) => {
-              const reqShift = req.requester_shift as { shift_date: string; start_time: string; end_time: string } | null;
+              const reqShift = req.requester_shift as unknown as { shift_date: string; start_time: string; end_time: string } | null;
               return (
                 <div key={req.id} className="flex items-center justify-between p-3 bg-coffee-50 rounded-lg">
                   <div>
@@ -103,7 +103,7 @@ export default async function ShiftsPage() {
         ) : (
           <div className="space-y-3">
             {myRequests.map((req) => {
-              const reqShift = req.requester_shift as { shift_date: string; start_time: string; end_time: string } | null;
+              const reqShift = req.requester_shift as unknown as { shift_date: string; start_time: string; end_time: string } | null;
               const targetEmp = req.target_employee as unknown as { full_name: string } | null;
               return (
                 <div key={req.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">

@@ -29,7 +29,7 @@ export default async function DashboardPage() {
         {profile && (
           <p className="text-gray-500 mt-1">
             {profile.position} · {profile.department}
-            {profile.location && ` · ${(profile.location as { name: string }).name}`}
+            {profile.location && ` · ${(profile.location as unknown as { name: string }).name}`}
           </p>
         )}
       </div>
