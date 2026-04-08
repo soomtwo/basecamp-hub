@@ -26,6 +26,7 @@ type SwapTarget = {
 export default function MonthlyCalendar({ locationId, userId }: { locationId: string; userId: string }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [pendingSwapShiftIds, setPendingSwapShiftIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [swapTarget, setSwapTarget] = useState<SwapTarget | null>(null);
@@ -64,6 +65,16 @@ export default function MonthlyCalendar({ locationId, userId }: { locationId: st
       .gte("shift_date", monthStart)
       .lte("shift_date", monthEnd)
       .order("start_time") as any;
+
+    // Fetch pending swap requests made by this user
+    const { data: swapRequests } = await supabase
+      .from("shift_swap_requests")
+      .select("requester_shift_id")
+      .eq("requester_id", userId)
+      .eq("status", "pending") as any;
+
+    const pendingIds = new Set<string>((swapRequests || []).map((r: any) => r.requester_shift_id));
+    setPendingSwapShiftIds(pendingIds);
 
     setShifts(shiftData || []);
     setLoading(false);
@@ -214,7 +225,11 @@ export default function MonthlyCalendar({ locationId, userId }: { locationId: st
                       </div>
                     </div>
 
-                    {canSwap && (
+                    {isMe && pendingSwapShiftIds.has(shift.id) ? (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1.5 rounded-lg font-medium">
+                        ⏳ Waiting approval
+                      </span>
+                    ) : canSwap ? (
                       <button
                         onClick={() => setSwapTarget({
                           shiftId: shift.id,
@@ -226,7 +241,7 @@ export default function MonthlyCalendar({ locationId, userId }: { locationId: st
                       >
                         🔄 Swap shift
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
