@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
@@ -10,7 +10,6 @@ const navItems = [
   { href: "/dashboard/directory", label: "Directory", icon: "👥" },
   { href: "/dashboard/schedule", label: "Schedule", icon: "📅" },
   { href: "/dashboard/vacation", label: "Vacation", icon: "🌴" },
-  { href: "/dashboard/shifts", label: "Shift Swaps", icon: "🔄" },
 ];
 
 export default function Sidebar({ userName }: { userName: string }) {
@@ -18,6 +17,19 @@ export default function Sidebar({ userName }: { userName: string }) {
   const router = useRouter();
   const supabase = createClient();
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    async function loadNotifications() {
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("read", false);
+      setUnread(count || 0);
+    }
+    loadNotifications();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -52,6 +64,9 @@ export default function Sidebar({ userName }: { userName: string }) {
         <div className="px-3 py-2 mb-2">
           <p className="text-xs text-gray-400">Signed in as</p>
           <p className="text-sm font-medium text-gray-700 truncate">{userName}</p>
+          {unread > 0 && (
+            <p className="text-xs text-coffee-600 font-medium mt-0.5">🔔 {unread} new notification{unread > 1 ? "s" : ""}</p>
+          )}
         </div>
         <button
           onClick={handleLogout}

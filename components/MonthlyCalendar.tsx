@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  format, startOfMonth, endOfMonth, startOfWeek,
   addDays, addMonths, subMonths, isSameMonth, isToday, isSameDay
 } from "date-fns";
+import ShiftSwapDialog from "./ShiftSwapDialog";
 
 type Shift = {
   id: string;
@@ -15,11 +16,19 @@ type Shift = {
   employee: { id: string; full_name: string; preferred_name?: string } | null;
 };
 
+type SwapTarget = {
+  shiftId: string;
+  shiftDate: string;
+  startTime: string;
+  endTime: string;
+};
+
 export default function MonthlyCalendar({ locationId, userId }: { locationId: string; userId: string }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [swapTarget, setSwapTarget] = useState<SwapTarget | null>(null);
 
   useEffect(() => {
     fetchShifts();
@@ -178,6 +187,9 @@ export default function MonthlyCalendar({ locationId, userId }: { locationId: st
               {selectedShifts.map((shift) => {
                 const emp = shift.employee as any;
                 const isMe = emp?.id === userId;
+                const shiftDate = new Date(`${shift.shift_date}T${shift.start_time}`);
+                const canSwap = isMe && shiftDate > new Date(Date.now() + 72 * 60 * 60 * 1000);
+
                 return (
                   <div
                     key={shift.id}
@@ -201,12 +213,38 @@ export default function MonthlyCalendar({ locationId, userId }: { locationId: st
                         </p>
                       </div>
                     </div>
+
+                    {canSwap && (
+                      <button
+                        onClick={() => setSwapTarget({
+                          shiftId: shift.id,
+                          shiftDate: shift.shift_date,
+                          startTime: shift.start_time,
+                          endTime: shift.end_time,
+                        })}
+                        className="text-xs text-coffee-700 border border-coffee-300 px-2.5 py-1.5 rounded-lg hover:bg-coffee-50 transition-colors font-medium"
+                      >
+                        🔄 Swap shift
+                      </button>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
         </div>
+      )}
+
+      {swapTarget && (
+        <ShiftSwapDialog
+          shiftId={swapTarget.shiftId}
+          shiftDate={swapTarget.shiftDate}
+          startTime={swapTarget.startTime}
+          endTime={swapTarget.endTime}
+          locationId={locationId}
+          onClose={() => setSwapTarget(null)}
+          onSuccess={() => { setSwapTarget(null); fetchShifts(); }}
+        />
       )}
     </div>
   );
