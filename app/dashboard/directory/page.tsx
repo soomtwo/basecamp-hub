@@ -22,6 +22,11 @@ export default async function DirectoryPage() {
     .eq("id", user.id)
     .single() as any;
 
+  const { data: positions } = await supabase
+    .from("positions")
+    .select("title, category")
+    .order("sort_order") as any;
+
   const { data: employees } = await supabase
     .from("profiles")
     .select(`id, full_name, preferred_name, position, department, email, anniversary_month, anniversary_day, hire_date, photo_url, manager:profiles!manager_id(full_name)`)
@@ -57,6 +62,7 @@ export default async function DirectoryPage() {
             hire_date: myProfile.hire_date,
             manager_name: myProfile.manager?.full_name ?? null,
           }}
+          positions={positions || []}
         />
       )}
 

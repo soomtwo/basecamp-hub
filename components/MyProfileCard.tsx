@@ -16,6 +16,11 @@ type Profile = {
   manager_name?: string;
 };
 
+type PositionOption = {
+  title: string;
+  category: string;
+};
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function getOrdinal(n: number) {
@@ -24,9 +29,16 @@ function getOrdinal(n: number) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-export default function MyProfileCard({ profile }: { profile: Profile }) {
+export default function MyProfileCard({
+  profile,
+  positions,
+}: {
+  profile: Profile;
+  positions: PositionOption[];
+}) {
   const [editing, setEditing] = useState(false);
   const [preferredName, setPreferredName] = useState(profile.preferred_name || profile.full_name || "");
+  const [position, setPosition] = useState(profile.position || "");
   const [photoUrl, setPhotoUrl] = useState(profile.photo_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,6 +52,13 @@ export default function MyProfileCard({ profile }: { profile: Profile }) {
     profile.anniversary_month && profile.anniversary_day
       ? `${MONTHS[profile.anniversary_month - 1]} ${getOrdinal(profile.anniversary_day)}`
       : null;
+
+  // Group positions by category for the dropdown
+  const grouped = positions.reduce((acc: Record<string, string[]>, p) => {
+    if (!acc[p.category]) acc[p.category] = [];
+    acc[p.category].push(p.title);
+    return acc;
+  }, {});
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -65,7 +84,7 @@ export default function MyProfileCard({ profile }: { profile: Profile }) {
     setSaving(true);
     await supabase
       .from("profiles")
-      .update({ preferred_name: preferredName, photo_url: photoUrl })
+      .update({ preferred_name: preferredName, photo_url: photoUrl, position })
       .eq("id", profile.id);
     setSaving(false);
     setSaved(true);
@@ -74,6 +93,7 @@ export default function MyProfileCard({ profile }: { profile: Profile }) {
   }
 
   const displayName = preferredName || profile.full_name;
+  const displayPosition = position || profile.position;
 
   return (
     <div className="bg-white rounded-xl border-2 border-coffee-300 p-5 mb-8">
@@ -95,7 +115,7 @@ export default function MyProfileCard({ profile }: { profile: Profile }) {
               disabled={uploading}
               className="absolute -bottom-1 -right-1 bg-coffee-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-coffee-800 transition-colors"
             >
-              {uploading ? "..." : "📷"}
+              {uploading ? "…" : "📷"}
             </button>
           )}
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
@@ -115,8 +135,27 @@ export default function MyProfileCard({ profile }: { profile: Profile }) {
             )}
             <span className="text-xs bg-coffee-100 text-coffee-700 px-2 py-0.5 rounded-full">You</span>
           </div>
-          <p className="text-sm text-gray-500">{profile.position}</p>
-          <p className="text-xs text-gray-400">{profile.department}</p>
+
+          {editing ? (
+            <select
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-coffee-400 text-gray-700 mt-1"
+            >
+              <option value="">Select position...</option>
+              {Object.entries(grouped).map(([category, titles]) => (
+                <optgroup key={category} label={category}>
+                  {titles.map((title) => (
+                    <option key={title} value={title}>{title}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          ) : (
+            <p className="text-sm text-gray-500">{displayPosition}</p>
+          )}
+
+          <p className="text-xs text-gray-400 mt-0.5">{profile.department}</p>
           {profile.manager_name && (
             <p className="text-xs text-gray-400 mt-0.5">Reports to {profile.manager_name}</p>
           )}
