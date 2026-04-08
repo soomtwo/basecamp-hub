@@ -5,14 +5,17 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const navItems = [
+const baseNavItems = [
   { href: "/dashboard", label: "Home", icon: "🏠" },
   { href: "/dashboard/directory", label: "Directory", icon: "👥" },
   { href: "/dashboard/schedule", label: "Schedule", icon: "📅" },
   { href: "/dashboard/vacation", label: "Vacation", icon: "🌴" },
 ];
 
-export default function Sidebar({ userName }: { userName: string }) {
+export default function Sidebar({ userName, canManage }: { userName: string; canManage?: boolean }) {
+  const navItems = canManage
+    ? [...baseNavItems, { href: "/dashboard/manage", label: "Manage", icon: "🗓️" }]
+    : baseNavItems;
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
