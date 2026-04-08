@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Image from "next/image";
@@ -29,12 +30,12 @@ export default async function DirectoryPage() {
       manager:profiles!manager_id(full_name)
     `)
     .eq("location_id", currentProfile?.location_id)
-    .order("full_name");
+    .order("full_name") as any;
 
-  const grouped = (employees || []).reduce((acc: Record<string, typeof employees>, emp) => {
-    const dept = emp!.department || "Other";
+  const grouped = ((employees || []) as any[]).reduce((acc: Record<string, any[]>, emp: any) => {
+    const dept = emp.department || "Other";
     if (!acc[dept]) acc[dept] = [];
-    acc[dept]!.push(emp);
+    acc[dept].push(emp);
     return acc;
   }, {});
 
@@ -42,7 +43,7 @@ export default async function DirectoryPage() {
     <div className="max-w-4xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-coffee-800">Directory</h1>
-        <p className="text-gray-500 text-sm mt-1">Your location's team</p>
+        <p className="text-gray-500 text-sm mt-1">Your location&apos;s team</p>
       </div>
 
       {Object.entries(grouped).map(([dept, members]) => (
@@ -51,13 +52,14 @@ export default async function DirectoryPage() {
             {dept}
           </h2>
           <div className="grid gap-3">
-            {members!.map((emp) => {
+            {(members as any[]).map((emp: any) => {
               const hireYear = emp.hire_date ? new Date(emp.hire_date).getFullYear() : null;
               const yearsIn = hireYear ? new Date().getFullYear() - hireYear : null;
               const anniversary =
                 emp.anniversary_month && emp.anniversary_day
                   ? `${MONTHS[emp.anniversary_month - 1]} ${getOrdinal(emp.anniversary_day)}`
                   : null;
+              const managerName = emp.manager?.full_name ?? null;
 
               return (
                 <div key={emp.id} className="bg-white rounded-xl p-4 border border-gray-100 flex items-center gap-4">
@@ -79,10 +81,8 @@ export default async function DirectoryPage() {
                       )}
                     </div>
                     <p className="text-sm text-gray-500">{emp.position}</p>
-                    {(emp.manager as unknown as { full_name: string } | null)?.full_name && (
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        Reports to {(emp.manager as unknown as { full_name: string }).full_name}
-                      </p>
+                    {managerName && (
+                      <p className="text-xs text-gray-400 mt-0.5">Reports to {managerName}</p>
                     )}
                   </div>
 

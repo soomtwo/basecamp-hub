@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -11,9 +12,10 @@ export default async function DashboardPage() {
     .from("profiles")
     .select("full_name, position, department, location:locations(name)")
     .eq("id", user.id)
-    .single();
+    .single() as any;
 
   const firstName = profile?.full_name?.split(" ")[0] || "there";
+  const locationName = profile?.location?.name ?? null;
 
   const cards = [
     { href: "/dashboard/directory", icon: "👥", title: "Directory", desc: "Find your teammates" },
@@ -29,7 +31,7 @@ export default async function DashboardPage() {
         {profile && (
           <p className="text-gray-500 mt-1">
             {profile.position} · {profile.department}
-            {profile.location && ` · ${(profile.location as unknown as { name: string }).name}`}
+            {locationName && ` · ${locationName}`}
           </p>
         )}
       </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { format, startOfWeek, addDays } from "date-fns";
@@ -31,19 +32,16 @@ export default async function SchedulePage() {
   const { data: shifts } = schedule
     ? await supabase
         .from("shifts")
-        .select(`
-          id, shift_date, start_time, end_time,
-          employee:profiles!employee_id(id, full_name)
-        `)
+        .select(`id, shift_date, start_time, end_time, employee:profiles!employee_id(id, full_name)`)
         .eq("schedule_id", schedule.id)
         .order("shift_date")
-        .order("start_time")
+        .order("start_time") as any
     : { data: [] };
 
-  const shiftsByDay: Record<string, typeof shifts> = {};
+  const shiftsByDay: Record<string, any[]> = {};
   weekDays.forEach(({ date }) => {
     const key = format(date, "yyyy-MM-dd");
-    shiftsByDay[key] = (shifts || []).filter((s) => s.shift_date === key);
+    shiftsByDay[key] = ((shifts || []) as any[]).filter((s: any) => s.shift_date === key);
   });
 
   return (
@@ -98,9 +96,8 @@ export default async function SchedulePage() {
                   {dayShifts.length === 0 ? (
                     <p className="text-xs text-gray-300">—</p>
                   ) : (
-                    dayShifts.map((shift) => {
-                      const emp = shift.employee as unknown as { id: string; full_name: string } | null;
-                      const isMe = emp?.id === user.id;
+                    dayShifts.map((shift: any) => {
+                      const isMe = shift.employee?.id === user.id;
                       return (
                         <div
                           key={shift.id}
@@ -108,7 +105,7 @@ export default async function SchedulePage() {
                             isMe ? "bg-coffee-100 text-coffee-800 font-medium" : "bg-gray-50 text-gray-600"
                           }`}
                         >
-                          <p className="font-medium truncate">{emp?.full_name?.split(" ")[0]}</p>
+                          <p className="font-medium truncate">{shift.employee?.full_name?.split(" ")[0]}</p>
                           <p className="text-xs opacity-70">
                             {shift.start_time?.slice(0, 5)} – {shift.end_time?.slice(0, 5)}
                           </p>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import VacationForm from "@/components/VacationForm";
@@ -33,7 +34,7 @@ export default async function VacationPage() {
         .from("vacation_requests")
         .select(`id, start_date, end_date, reason, status, created_at, employee:profiles!employee_id(full_name)`)
         .eq("status", "pending")
-        .order("created_at")
+        .order("created_at") as any
     : { data: [] };
 
   return (
@@ -52,16 +53,14 @@ export default async function VacationPage() {
         <div className="bg-white rounded-xl border border-coffee-200 p-6 mb-6">
           <h2 className="font-semibold text-coffee-800 mb-4">⏳ Pending Approval ({pendingRequests.length})</h2>
           <div className="space-y-3">
-            {pendingRequests.map((req) => (
+            {(pendingRequests as any[]).map((req: any) => (
               <div key={req.id} className="flex items-center justify-between p-3 bg-coffee-50 rounded-lg">
                 <div>
-                  <p className="font-medium text-gray-800">
-                    {(req.employee as unknown as { full_name: string } | null)?.full_name}
-                  </p>
+                  <p className="font-medium text-gray-800">{req.employee?.full_name}</p>
                   <p className="text-sm text-gray-500">
                     {format(new Date(req.start_date), "MMM d")} – {format(new Date(req.end_date), "MMM d, yyyy")}
                   </p>
-                  {req.reason && <p className="text-xs text-gray-400 mt-0.5">"{req.reason}"</p>}
+                  {req.reason && <p className="text-xs text-gray-400 mt-0.5">&ldquo;{req.reason}&rdquo;</p>}
                 </div>
                 <div className="flex gap-2">
                   <form action={`/api/vacation/${req.id}/approve`} method="POST">
@@ -93,7 +92,7 @@ export default async function VacationPage() {
                   <p className="text-sm font-medium text-gray-800">
                     {format(new Date(req.start_date), "MMM d")} – {format(new Date(req.end_date), "MMM d, yyyy")}
                   </p>
-                  {req.reason && <p className="text-xs text-gray-400 mt-0.5">"{req.reason}"</p>}
+                  {req.reason && <p className="text-xs text-gray-400 mt-0.5">&ldquo;{req.reason}&rdquo;</p>}
                 </div>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${STATUS_STYLES[req.status] || "bg-gray-100 text-gray-600"}`}>
                   {req.status}
