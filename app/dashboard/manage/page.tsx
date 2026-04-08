@@ -1,13 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import CreateShiftForm from "@/components/CreateShiftForm";
+import ManageTabs from "@/components/ManageTabs";
 
 export default async function ManagePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Verify this user has manage access
   const { data: profile } = await supabase
     .from("profiles")
     .select("position")
@@ -18,12 +17,10 @@ export default async function ManagePage() {
     const { data: pos } = await supabase
       .from("positions")
       .select("sort_order")
-      .eq("id", profile.position)
+      .eq("title", profile.position)
       .single() as any;
 
-    if (![3, 4, 5].includes(pos?.sort_order ?? 0)) {
-      redirect("/dashboard");
-    }
+    if (![3, 4, 5].includes(pos?.sort_order ?? 0)) redirect("/dashboard");
   } else {
     redirect("/dashboard");
   }
@@ -34,12 +31,12 @@ export default async function ManagePage() {
     .order("city") as any;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-5xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-coffee-800">Manage Schedule</h1>
-        <p className="text-gray-500 text-sm mt-1">Create shifts for your team</p>
+        <p className="text-gray-500 text-sm mt-1">Auto-generate or manually add shifts</p>
       </div>
-      <CreateShiftForm locations={locations || []} />
+      <ManageTabs locations={locations || []} />
     </div>
   );
 }

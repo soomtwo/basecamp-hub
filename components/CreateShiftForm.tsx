@@ -8,8 +8,8 @@ type Location = { id: string; name: string; city: string };
 type Employee = { id: string; full_name: string; preferred_name?: string; email: string };
 
 const SHIFT_OPTIONS = [
-  { label: "Morning  8:00 – 16:00", start: "08:00:00", end: "16:00:00" },
-  { label: "Afternoon  12:00 – 20:00", start: "12:00:00", end: "20:00:00" },
+  { label: "AM  8:00 – 17:00", start: "08:00:00", end: "17:00:00" },
+  { label: "PM  16:00 – 20:00", start: "16:00:00", end: "20:00:00" },
 ];
 
 export default function CreateShiftForm({ locations }: { locations: Location[] }) {
