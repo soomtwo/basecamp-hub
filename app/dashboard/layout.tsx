@@ -24,8 +24,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .select("sort_order")
       .eq("id", profile.position)
       .single() as any;
-    // sort_order 2, 3, 4 = Senior/Lead Barista, Shift Supervisor, Assistant Store Manager
-    canManage = [2, 3, 4].includes(pos?.sort_order ?? 0);
+    // sort_order 3, 4, 5 = Shift Supervisor, Assistant Store Manager, Store Manager
+    canManage = [3, 4, 5].includes(pos?.sort_order ?? 0);
   }
 
   return (

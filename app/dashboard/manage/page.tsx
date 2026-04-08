@@ -21,7 +21,7 @@ export default async function ManagePage() {
       .eq("id", profile.position)
       .single() as any;
 
-    if (![2, 3, 4].includes(pos?.sort_order ?? 0)) {
+    if (![3, 4, 5].includes(pos?.sort_order ?? 0)) {
       redirect("/dashboard");
     }
   } else {
